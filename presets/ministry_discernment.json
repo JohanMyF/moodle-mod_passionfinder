@@ -1,0 +1,247 @@
+{
+  "metadata": {
+    "title": "Ministry Discernment Reflection",
+    "description": "A reflective best-worst choice instrument to help respondents explore the people, activities, environments, and issues they feel most and least drawn toward.",
+    "schema": "mod_passionfinder",
+    "schemaVersion": 1,
+    "createdBy": "mod_passionfinder_preset",
+    "containsStudentData": false
+  },
+  "settings": {
+    "itemsperround": 5,
+    "roundspercategory": 8,
+    "resultdepth": 5,
+    "mostlabel": "Most drawn to",
+    "leastlabel": "Least drawn to"
+  },
+  "categories": [
+    {
+      "id": "people_served",
+      "name": "People I feel drawn to serve",
+      "prompt": "The people I feel most and least drawn to serve are...",
+      "mostlabel": "Most drawn to",
+      "leastlabel": "Least drawn to",
+      "items": [
+        {
+          "id": "children",
+          "label": "Children"
+        },
+        {
+          "id": "teenagers",
+          "label": "Teenagers"
+        },
+        {
+          "id": "elderly_people",
+          "label": "Elderly people"
+        },
+        {
+          "id": "sick_people",
+          "label": "Sick people"
+        },
+        {
+          "id": "homeless_people",
+          "label": "Homeless people"
+        },
+        {
+          "id": "people_in_grief",
+          "label": "People in grief"
+        },
+        {
+          "id": "single_parents",
+          "label": "Single parents"
+        },
+        {
+          "id": "unemployed_people",
+          "label": "Unemployed people"
+        },
+        {
+          "id": "people_with_disabilities",
+          "label": "People with disabilities"
+        },
+        {
+          "id": "new_believers",
+          "label": "New believers"
+        },
+        {
+          "id": "lonely_people",
+          "label": "People who are lonely"
+        },
+        {
+          "id": "people_in_leadership",
+          "label": "People in leadership"
+        }
+      ]
+    },
+    {
+      "id": "service_activities",
+      "name": "Activities that give me energy",
+      "prompt": "The service activities that would give me most and least energy are...",
+      "mostlabel": "Gives me most energy",
+      "leastlabel": "Gives me least energy",
+      "items": [
+        {
+          "id": "teaching",
+          "label": "Teaching or explaining"
+        },
+        {
+          "id": "organising",
+          "label": "Organising people or events"
+        },
+        {
+          "id": "counselling",
+          "label": "Listening and counselling"
+        },
+        {
+          "id": "practical_help",
+          "label": "Giving practical help"
+        },
+        {
+          "id": "hospitality",
+          "label": "Welcoming and hospitality"
+        },
+        {
+          "id": "creative_design",
+          "label": "Creative design"
+        },
+        {
+          "id": "music_worship",
+          "label": "Music or worship"
+        },
+        {
+          "id": "administration",
+          "label": "Administration and records"
+        },
+        {
+          "id": "mentoring",
+          "label": "Mentoring one person over time"
+        },
+        {
+          "id": "public_speaking",
+          "label": "Public speaking"
+        },
+        {
+          "id": "visiting",
+          "label": "Visiting people at home or in hospital"
+        },
+        {
+          "id": "fundraising",
+          "label": "Fundraising or mobilising resources"
+        }
+      ]
+    },
+    {
+      "id": "work_environments",
+      "name": "Environments I feel comfortable in",
+      "prompt": "The environments I would find most and least comfortable are...",
+      "mostlabel": "Most comfortable",
+      "leastlabel": "Least comfortable",
+      "items": [
+        {
+          "id": "quiet_one_to_one",
+          "label": "Quiet one-to-one conversations"
+        },
+        {
+          "id": "small_groups",
+          "label": "Small groups"
+        },
+        {
+          "id": "large_groups",
+          "label": "Large groups"
+        },
+        {
+          "id": "behind_the_scenes",
+          "label": "Behind-the-scenes support"
+        },
+        {
+          "id": "busy_public_space",
+          "label": "Busy public spaces"
+        },
+        {
+          "id": "online_environment",
+          "label": "Online or digital environments"
+        },
+        {
+          "id": "crisis_situations",
+          "label": "Crisis situations"
+        },
+        {
+          "id": "structured_programme",
+          "label": "Structured programmes"
+        },
+        {
+          "id": "informal_conversations",
+          "label": "Informal conversations"
+        },
+        {
+          "id": "outdoor_settings",
+          "label": "Outdoor settings"
+        },
+        {
+          "id": "home_visits",
+          "label": "Home visits"
+        },
+        {
+          "id": "formal_meetings",
+          "label": "Formal meetings"
+        }
+      ]
+    },
+    {
+      "id": "social_issues",
+      "name": "Issues I feel passionate about",
+      "prompt": "The societal issues I feel most and least passionate about are...",
+      "mostlabel": "Most passionate about",
+      "leastlabel": "Least passionate about",
+      "items": [
+        {
+          "id": "poverty",
+          "label": "Poverty"
+        },
+        {
+          "id": "education_access",
+          "label": "Access to education"
+        },
+        {
+          "id": "family_support",
+          "label": "Support for families"
+        },
+        {
+          "id": "elder_care",
+          "label": "Care for elderly people"
+        },
+        {
+          "id": "healthcare_access",
+          "label": "Access to healthcare"
+        },
+        {
+          "id": "youth_development",
+          "label": "Youth development"
+        },
+        {
+          "id": "addiction_recovery",
+          "label": "Addiction recovery"
+        },
+        {
+          "id": "employment_skills",
+          "label": "Employment and skills development"
+        },
+        {
+          "id": "loneliness",
+          "label": "Loneliness and isolation"
+        },
+        {
+          "id": "violence_abuse",
+          "label": "Violence and abuse prevention"
+        },
+        {
+          "id": "disability_inclusion",
+          "label": "Disability inclusion"
+        },
+        {
+          "id": "spiritual_growth",
+          "label": "Spiritual growth and discipleship"
+        }
+      ]
+    }
+  ]
+}

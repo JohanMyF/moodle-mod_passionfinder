@@ -1,0 +1,181 @@
+/*
+ * This file is part of Moodle - http://moodle.org/
+ *
+ * Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * at your option any later version.
+ *
+ * Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Moodle. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ * Styles for the PassionFinder activity module.
+ *
+ * @package    mod_passionfinder
+ * @copyright  2026 Johan Venter
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+.path-mod-passionfinder .passionfinder-visual-summary {
+    max-width: 58rem;
+    margin: 1rem 0 1.5rem;
+}
+
+.path-mod-passionfinder .passionfinder-visual-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible;
+}
+
+.path-mod-passionfinder .passionfinder-heart {
+    opacity: 0;
+    transform: translate(160px, 120px) scale(0.05);
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.path-mod-passionfinder .passionfinder-visual-summary.passionfinder-visual-visible .passionfinder-heart {
+    animation-name: passionfinder-heart-float-in;
+    animation-duration: 650ms;
+    animation-timing-function: cubic-bezier(.18, .89, .32, 1.28);
+    animation-fill-mode: forwards;
+}
+
+.path-mod-passionfinder .passionfinder-heart text {
+    pointer-events: none;
+}
+
+.path-mod-passionfinder .passionfinder-report-category {
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+@keyframes passionfinder-heart-float-in {
+    0% {
+        opacity: 0;
+        transform: translate(160px, 120px) scale(0.05);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translate(-8px, -6px) scale(1.04);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@media print {
+    .path-mod-passionfinder .passionfinder-heart {
+        opacity: 1;
+        transform: none;
+        animation: none;
+    }
+
+    .path-mod-passionfinder .passionfinder-report-actions,
+    .path-mod-passionfinder .passionfinder-navigation,
+    .path-mod-passionfinder .navbar,
+    .path-mod-passionfinder [data-region="drawer-toggle"],
+    .path-mod-passionfinder .drawer {
+        display: none !important;
+    }
+
+    .path-mod-passionfinder .passionfinder-visual-summary {
+        max-width: 100%;
+    }
+}
+
+
+/* Builder family alignment: keep PassionFinder close to SelfProfile. */
+.path-mod-passionfinder .passionfinder-builder-summary {
+    max-width: 34rem;
+    margin-bottom: 1rem;
+}
+
+.path-mod-passionfinder .passionfinder-builder-details {
+    margin-bottom: 0.6rem;
+}
+
+.path-mod-passionfinder .passionfinder-builder-details > summary.btn {
+    border-radius: 0.5rem;
+}
+
+.path-mod-passionfinder .passionfinder-builder-importexport,
+.path-mod-passionfinder .passionfinder-builder-category {
+    margin-bottom: 0.9rem;
+}
+
+.path-mod-passionfinder .passionfinder-category-details,
+.path-mod-passionfinder .passionfinder-edit-item-details {
+    position: relative;
+}
+
+.path-mod-passionfinder .passionfinder-category-summary {
+    padding-right: 3.5rem;
+}
+
+.path-mod-passionfinder .passionfinder-item-summary {
+    font-weight: 600;
+    border-left: 0.35rem solid #1177d1;
+    background-color: #eef6ff;
+}
+
+.path-mod-passionfinder .passionfinder-existing-item-summary {
+    color: #0b5873;
+    margin-bottom: 0;
+    padding-right: 3.5rem;
+}
+
+.path-mod-passionfinder .passionfinder-edit-item-details[open] > summary.passionfinder-existing-item-summary,
+.path-mod-passionfinder .passionfinder-add-item-details[open] > summary.passionfinder-item-summary {
+    background-color: #ddeeff;
+}
+
+.path-mod-passionfinder .passionfinder-add-item-details,
+.path-mod-passionfinder .passionfinder-edit-item-details {
+    margin-left: 1rem;
+    margin-bottom: 0.6rem;
+}
+
+.path-mod-passionfinder .passionfinder-delete-form {
+    position: absolute;
+    right: 0.65rem;
+    z-index: 2;
+    margin: 0;
+}
+
+.path-mod-passionfinder .passionfinder-category-delete-form {
+    top: 0.2rem;
+}
+
+.path-mod-passionfinder .passionfinder-item-delete-form {
+    top: 0.1rem;
+}
+
+.path-mod-passionfinder .passionfinder-delete-button {
+    color: #6a1a1a;
+    text-decoration: none;
+    font-size: 1.05rem;
+    line-height: 1;
+    padding: 0.35rem 0.5rem;
+}
+
+.path-mod-passionfinder .passionfinder-delete-button:hover,
+.path-mod-passionfinder .passionfinder-delete-button:focus {
+    color: #b00020;
+    text-decoration: none;
+}
+
+.path-mod-passionfinder .passionfinder-actions {
+    margin-top: 1rem;
+}
