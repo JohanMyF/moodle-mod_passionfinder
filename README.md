@@ -633,3 +633,23 @@ This plugin is released under the GNU General Public License v3 or later, consis
 ## Author
 
 Developed by Johan Venter as part of a Moodle activity development workflow for reflective learning and reusable teacher-authored instruments.
+
+## Choice-set coverage and learner effort
+
+PassionFinder balances item exposure and pair co-occurrence when generating best-worst choice screens.
+For the common configuration of 10 items in a category with 5 items shown per screen, version 0.2.0
+uses exact pair-covering designs at key screen counts:
+
+- 6 screens: every item pair appears together at least once.
+- 10 screens: every item pair appears together at least twice.
+- 14 screens: every item pair appears together at least three times.
+- 18 screens: every item pair appears together at least four times.
+
+Intermediate screen counts preserve the guaranteed coverage of the preceding milestone and add further
+balanced screens. More screens provide repeated evidence about preferences, but they also increase
+respondent burden. For low-stakes reflection, 6 screens per category is therefore a useful starting
+point when a category contains exactly 10 items and 5 are shown per screen.
+
+Here, "pair appears together" means that the two items occur in the same best-worst choice set. It does
+not mean that the learner makes an explicit binary judgement between every pair. PassionFinder remains
+a reflective MaxDiff-style activity rather than a formal psychometric or diagnostic instrument.

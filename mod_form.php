@@ -66,7 +66,9 @@ class mod_passionfinder_mod_form extends moodleform_mod {
             8 => 8,
             10 => 10,
             12 => 12,
+            14 => 14,
             16 => 16,
+            18 => 18,
         ];
         $mform->addElement('select', 'roundspercategory', get_string('roundspercategory', 'mod_passionfinder'),
             $roundoptions);

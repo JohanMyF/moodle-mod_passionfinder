@@ -41,7 +41,7 @@ $string['instrumentjson_help'] = 'Paste the PassionFinder JSON instrument here. 
 $string['itemsperround'] = 'Items per screen';
 $string['itemsperround_help'] = 'The number of items shown to the respondent in each best-worst choice screen.';
 $string['roundspercategory'] = 'Screens per category';
-$string['roundspercategory_help'] = 'The number of best-worst choice screens generated for each category.';
+$string['roundspercategory_help'] = 'The number of best-worst choice screens generated for each category. More screens increase repeated exposure but also increase learner effort. With exactly 10 items and 5 items per screen, 6, 10, 14 and 18 screens guarantee that every item pair appears together at least 1, 2, 3 and 4 times respectively.';
 $string['resultdepth'] = 'Result output size';
 $string['resultdepth_help'] = 'The number of top-ranked items to show in the final reflective report.';
 $string['mostlabel'] = 'Most label';
@@ -222,4 +222,6 @@ $string['datatable'] = 'Data table';
 $string['importantnote'] = 'Important note';
 $string['resultdisclaimer'] = 'This report is not a diagnosis or formal psychometric assessment. It is intended to support conversation between the respondent and a teacher, counsellor, coach, facilitator, or mentor. It should not be used on its own to make career, placement, or selection decisions.';
 
-$string['yourresults'] = 'Your results';
+$string['yourresults'] = 'Your results';$string['validateimportjsonfile'] = 'Validate and import JSON file';
+$string['validateimportpastedjson'] = 'Validate and import pasted JSON';
+$string['advancedjsonintro'] = 'Advanced option: paste, inspect, validate, troubleshoot, or manually save the complete JSON below.';

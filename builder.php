@@ -23,8 +23,10 @@
  */
 
 require_once(__DIR__ . '/../../config.php');
+require_once(__DIR__ . '/classes/form/import_form.php');
 
 use mod_passionfinder\local\instrument_parser;
+use mod_passionfinder\form\import_form;
 
 $id = required_param('id', PARAM_INT);
 
@@ -46,6 +48,7 @@ $messages = [];
 $opencategoryid = optional_param('opencategory', '', PARAM_TEXT);
 $edititemid = optional_param('edititem', '', PARAM_TEXT);
 $formurl = new moodle_url('/mod/passionfinder/builder.php', ['id' => $cm->id]);
+$importform = new import_form($formurl);
 
 if (optional_param('exportjson', 0, PARAM_BOOL)) {
     require_sesskey();
@@ -64,15 +67,19 @@ if (optional_param('exportjson', 0, PARAM_BOOL)) {
 $config = passionfinder_builder_get_config($passionfinder);
 $config = passionfinder_builder_normalise_config($config, $passionfinder);
 
-if (optional_param('importjson', 0, PARAM_BOOL)) {
+if ($importdata = $importform->get_data()) {
     require_sesskey();
 
     try {
-        $importjson = trim(optional_param('importjsontext', '', PARAM_NOTAGS));
-        $uploadedjson = passionfinder_builder_get_uploaded_json('importjsonfile');
+        $importjson = '';
 
-        if ($uploadedjson !== null) {
-            $importjson = $uploadedjson;
+        if (!empty($importdata->importfilebutton)) {
+            $uploadedjson = $importform->get_file_content('importjsonfile');
+            if ($uploadedjson !== false && $uploadedjson !== null) {
+                $importjson = trim($uploadedjson);
+            }
+        } else if (!empty($importdata->importpastebutton)) {
+            $importjson = trim((string)($importdata->importjsontext ?? ''));
         }
 
         if ($importjson === '') {
@@ -303,7 +310,7 @@ $summarytable->data[] = [get_string('categoryplural', 'mod_passionfinder'), coun
 $summarytable->data[] = [get_string('builderitems', 'mod_passionfinder'), passionfinder_builder_count_items($config)];
 echo html_writer::table($summarytable);
 
-echo passionfinder_builder_render_import_export_panel($formurl, $config);
+echo passionfinder_builder_render_import_export_panel($formurl, $config, $importform);
 
 echo passionfinder_builder_render_metadata_form($formurl, $config, $passionfinder);
 
@@ -351,44 +358,6 @@ echo html_writer::div(
 );
 
 echo $OUTPUT->footer();
-
-/**
- * Gets uploaded JSON content from a file input.
- *
- * @param string $fieldname File input name.
- * @return string|null Uploaded JSON text, or null if no file was uploaded.
- */
-function passionfinder_builder_get_uploaded_json(string $fieldname): ?string {
-    if (empty($_FILES[$fieldname]) || empty($_FILES[$fieldname]['tmp_name'])) {
-        return null;
-    }
-
-    if (!isset($_FILES[$fieldname]['error']) || $_FILES[$fieldname]['error'] === UPLOAD_ERR_NO_FILE) {
-        return null;
-    }
-
-    if ($_FILES[$fieldname]['error'] !== UPLOAD_ERR_OK) {
-        throw new moodle_exception('builderimportuploaderror', 'mod_passionfinder');
-    }
-
-    if (!is_uploaded_file($_FILES[$fieldname]['tmp_name'])) {
-        throw new moodle_exception('builderimportuploaderror', 'mod_passionfinder');
-    }
-
-    $filesize = (int) ($_FILES[$fieldname]['size'] ?? 0);
-
-    if ($filesize <= 0 || $filesize > 524288) {
-        throw new moodle_exception('builderimportfilesize', 'mod_passionfinder');
-    }
-
-    $content = file_get_contents($_FILES[$fieldname]['tmp_name']);
-
-    if ($content === false) {
-        throw new moodle_exception('builderimportuploaderror', 'mod_passionfinder');
-    }
-
-    return trim($content);
-}
 
 /**
  * Gets the JSON config from the activity.
@@ -485,14 +454,17 @@ function passionfinder_builder_save_config(int $passionfinderid, stdClass $confi
  * @param stdClass $config Config object.
  * @return string
  */
-function passionfinder_builder_render_import_export_panel(moodle_url $formurl, stdClass $config): string {
+function passionfinder_builder_render_import_export_panel(
+    moodle_url $formurl,
+    stdClass $config,
+    import_form $importform
+): string {
     $json = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     $html = '';
     $html .= html_writer::start_tag('details', ['class' => 'passionfinder-builder-details', 'open' => 'open']);
     $html .= html_writer::tag('summary', get_string('importexportjson', 'mod_passionfinder'), ['class' => 'btn btn-secondary btn-block text-left']);
     $html .= html_writer::start_div('generalbox passionfinder-builder-importexport');
-
     $html .= html_writer::tag('p', get_string('importexportintro', 'mod_passionfinder'));
 
     $html .= html_writer::start_tag('form', ['method' => 'post', 'action' => $formurl, 'class' => 'mb-3']);
@@ -501,40 +473,14 @@ function passionfinder_builder_render_import_export_panel(moodle_url $formurl, s
     $html .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('exportjson', 'mod_passionfinder'), 'class' => 'btn btn-primary']);
     $html .= html_writer::end_tag('form');
 
-    $html .= html_writer::start_tag('form', [
-        'method' => 'post',
-        'action' => $formurl,
-        'enctype' => 'multipart/form-data',
-    ]);
-    $html .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-    $html .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'importjson', 'value' => 1]);
+    // Moodle's Form API renders the standard filepicker, including drag-and-drop,
+    // accepted file types, accessibility hooks, and theme-compatible styling.
+    $html .= $importform->render();
 
-    $html .= html_writer::start_div('mb-3');
-    $html .= html_writer::tag('label', get_string('jsonfile', 'mod_passionfinder'), ['for' => 'id_importjsonfile']);
-    $html .= html_writer::empty_tag('input', [
-        'type' => 'file',
-        'id' => 'id_importjsonfile',
-        'name' => 'importjsonfile',
-        'accept' => '.json,application/json',
-        'class' => 'form-control',
-    ]);
-    $html .= html_writer::end_div();
-
-    $html .= html_writer::tag('label', get_string('pastejson', 'mod_passionfinder'), ['for' => 'id_importjsontext']);
-    $html .= html_writer::tag('textarea', '', [
-        'id' => 'id_importjsontext',
-        'name' => 'importjsontext',
-        'rows' => 10,
-        'cols' => 90,
-        'class' => 'form-control',
-    ]);
-    $html .= html_writer::tag('p', get_string('currentjsonhint', 'mod_passionfinder'), ['class' => 'form-text text-muted']);
     $html .= html_writer::tag('details',
         html_writer::tag('summary', get_string('showcurrentjson', 'mod_passionfinder')) .
         html_writer::tag('pre', s($json), ['class' => 'mt-2 p-3 bg-light border'])
     );
-    $html .= html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('importjson', 'mod_passionfinder'), 'class' => 'btn btn-warning mt-2']);
-    $html .= html_writer::end_tag('form');
 
     $html .= html_writer::end_div();
     $html .= html_writer::end_tag('details');
@@ -567,7 +513,7 @@ function passionfinder_builder_render_metadata_form(moodle_url $formurl, stdClas
     $html .= html_writer::select([3 => 3, 4 => 4, 5 => 5, 6 => 6], 'itemsperround', $config->settings->itemsperround, false, ['class' => 'form-control']);
     $html .= html_writer::end_div();
 
-    $roundoptions = [4 => 4, 6 => 6, 8 => 8, 10 => 10, 12 => 12, 16 => 16];
+    $roundoptions = [4 => 4, 6 => 6, 8 => 8, 10 => 10, 12 => 12, 14 => 14, 16 => 16, 18 => 18];
     $html .= html_writer::start_div('mb-3');
     $html .= html_writer::tag('label', get_string('roundspercategory', 'mod_passionfinder'));
     $html .= html_writer::select($roundoptions, 'roundspercategory', $config->settings->roundspercategory, false, ['class' => 'form-control']);

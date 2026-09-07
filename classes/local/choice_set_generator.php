@@ -29,16 +29,88 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Generates balanced best-worst choice sets from a parsed PassionFinder instrument.
  *
- * The goal is practical educational usefulness rather than full statistical MaxDiff
- * design optimisation. The generator keeps the process deterministic per user and
- * attempt seed, spreads item appearances as evenly as possible, and freezes the
- * generated sets for later storage in passionfinder_sets.
+ * The generator aims to minimise respondent burden while spreading item exposure and
+ * pair co-occurrence as evenly as practical. For the common 10-item / 5-per-screen
+ * configuration it uses exact covering designs at 6, 10, 14 and 18 screens. These
+ * guarantee that every item pair appears together at least 1, 2, 3 or 4 times
+ * respectively. Other configurations use a deterministic balanced heuristic.
+ *
+ * Generated sets remain deterministic for a given seed so that an attempt can be
+ * reproduced reliably before the frozen sets are stored in passionfinder_sets.
  *
  * @package    mod_passionfinder
  */
 class choice_set_generator {
-    /** @var int Maximum attempts to improve a candidate set. */
-    private const CANDIDATE_ATTEMPTS = 30;
+    /** @var int Number of candidate sets sampled by the fallback heuristic. */
+    private const CANDIDATE_ATTEMPTS = 120;
+
+    /**
+     * Exact covering templates for 10 items shown 5 at a time.
+     *
+     * Templates are indexed by the number of screens. Item numbers are positions
+     * 0..9 after a deterministic seed-based permutation. The designs were solved as
+     * pair-covering/multicover designs and have perfectly balanced item exposure.
+     *
+     * @var array<int, array<int, array<int>>>
+     */
+    private const TEN_BY_FIVE_TEMPLATES = [
+        6 => [
+            [0, 1, 2, 4, 6],
+            [0, 2, 3, 5, 8],
+            [0, 4, 5, 7, 9],
+            [1, 3, 4, 7, 8],
+            [1, 3, 5, 6, 9],
+            [2, 6, 7, 8, 9],
+        ],
+        10 => [
+            [0, 1, 2, 6, 9],
+            [0, 1, 3, 5, 8],
+            [0, 1, 4, 5, 9],
+            [0, 2, 7, 8, 9],
+            [0, 3, 4, 6, 7],
+            [1, 2, 3, 4, 7],
+            [1, 5, 6, 7, 8],
+            [2, 3, 5, 7, 9],
+            [2, 4, 5, 6, 8],
+            [3, 4, 6, 8, 9],
+        ],
+        14 => [
+            [0, 1, 2, 6, 7],
+            [0, 1, 4, 5, 8],
+            [0, 1, 5, 6, 9],
+            [0, 2, 3, 4, 6],
+            [0, 2, 7, 8, 9],
+            [0, 3, 4, 5, 7],
+            [0, 3, 7, 8, 9],
+            [1, 2, 3, 4, 9],
+            [1, 2, 3, 5, 7],
+            [1, 3, 6, 8, 9],
+            [1, 4, 6, 7, 8],
+            [2, 3, 5, 6, 8],
+            [2, 4, 5, 8, 9],
+            [4, 5, 6, 7, 9],
+        ],
+        18 => [
+            [0, 1, 2, 3, 5],
+            [0, 1, 2, 4, 6],
+            [0, 1, 5, 7, 9],
+            [0, 1, 6, 7, 8],
+            [0, 2, 3, 6, 9],
+            [0, 2, 4, 7, 8],
+            [0, 3, 4, 8, 9],
+            [0, 3, 5, 6, 8],
+            [0, 4, 5, 7, 9],
+            [1, 2, 3, 4, 7],
+            [1, 2, 5, 8, 9],
+            [1, 3, 4, 5, 8],
+            [1, 3, 6, 7, 9],
+            [1, 4, 6, 8, 9],
+            [2, 3, 7, 8, 9],
+            [2, 4, 5, 6, 9],
+            [2, 5, 6, 7, 8],
+            [3, 4, 5, 6, 7],
+        ],
+    ];
 
     /**
      * Generates all choice sets for all categories in an instrument.
@@ -78,7 +150,8 @@ class choice_set_generator {
      * @param int $seed Stable seed.
      * @return array Generated set objects.
      */
-    public static function generate_for_category(\stdClass $category, int $itemsperround, int $roundspercategory, int $seed = 1): array {
+    public static function generate_for_category(\stdClass $category, int $itemsperround,
+            int $roundspercategory, int $seed = 1): array {
         $items = array_values($category->items);
         $itemcount = count($items);
 
@@ -88,37 +161,94 @@ class choice_set_generator {
 
         $itemsperround = max(1, min($itemsperround, $itemcount));
         $roundspercategory = max(1, $roundspercategory);
+        $rngstate = self::normalise_seed($seed);
 
         $appearances = [];
         $pairings = [];
-
         foreach ($items as $item) {
             $appearances[$item->id] = 0;
             $pairings[$item->id] = [];
         }
 
-        $sets = [];
-        $rngstate = self::normalise_seed($seed);
+        $rawsets = [];
 
-        for ($round = 1; $round <= $roundspercategory; $round++) {
-            $candidate = self::select_best_candidate($items, $itemsperround, $appearances, $pairings, $rngstate);
-
-            foreach ($candidate as $item) {
-                $appearances[$item->id]++;
+        // Use an exact pair-covering design for the common 10 x 5 configuration.
+        if ($itemcount === 10 && $itemsperround === 5 && $roundspercategory >= 6) {
+            $rawsets = self::generate_ten_by_five_sets(
+                $items,
+                $roundspercategory,
+                $appearances,
+                $pairings,
+                $rngstate
+            );
+        } else {
+            for ($round = 1; $round <= $roundspercategory; $round++) {
+                $candidate = self::select_best_candidate($items, $itemsperround, $appearances, $pairings, $rngstate);
+                self::record_candidate($candidate, $appearances, $pairings);
+                $rawsets[] = $candidate;
             }
+        }
 
-            self::record_pairings($candidate, $pairings);
-
+        $sets = [];
+        foreach ($rawsets as $index => $candidate) {
             $set = new \stdClass();
             $set->categoryid = $category->id;
             $set->categoryname = $category->name;
             $set->prompt = $category->prompt;
             $set->mostlabel = $category->mostlabel;
             $set->leastlabel = $category->leastlabel;
-            $set->categorysetnumber = $round;
-            $set->items = array_values($candidate);
-
+            $set->categorysetnumber = $index + 1;
+            $set->items = array_values(self::deterministic_shuffle($candidate, $rngstate));
             $sets[] = $set;
+        }
+
+        return $sets;
+    }
+
+    /**
+     * Builds the common 10-item / 5-per-screen design.
+     *
+     * The largest exact template not exceeding the requested number of screens is
+     * used first. Any extra screens are then added by the balanced fallback
+     * heuristic. This means 6, 10, 14 and 18 screens provide guaranteed minimum
+     * pair co-occurrence of 1, 2, 3 and 4 respectively, while intermediate screen
+     * counts preserve the guarantee of the preceding exact template.
+     *
+     * @param array $items Ten item objects.
+     * @param int $roundspercategory Requested screens.
+     * @param array $appearances Appearance counts, updated by reference.
+     * @param array $pairings Pair counts, updated by reference.
+     * @param int $rngstate RNG state, updated by reference.
+     * @return array Array of candidate sets.
+     */
+    private static function generate_ten_by_five_sets(array $items, int $roundspercategory,
+            array &$appearances, array &$pairings, int &$rngstate): array {
+        $permuteditems = self::deterministic_shuffle($items, $rngstate);
+
+        $templatesizes = array_keys(self::TEN_BY_FIVE_TEMPLATES);
+        rsort($templatesizes, SORT_NUMERIC);
+        $basesize = 6;
+        foreach ($templatesizes as $templatesize) {
+            if ($templatesize <= $roundspercategory) {
+                $basesize = $templatesize;
+                break;
+            }
+        }
+
+        $sets = [];
+        foreach (self::TEN_BY_FIVE_TEMPLATES[$basesize] as $positions) {
+            $candidate = [];
+            foreach ($positions as $position) {
+                $candidate[] = $permuteditems[$position];
+            }
+            self::record_candidate($candidate, $appearances, $pairings);
+            $sets[] = $candidate;
+        }
+
+        while (count($sets) < $roundspercategory) {
+            $candidate = self::select_best_candidate($items, 5, $appearances, $pairings, $rngstate);
+            self::record_candidate($candidate, $appearances, $pairings);
+            $sets[] = $candidate;
         }
 
         return $sets;
@@ -135,7 +265,12 @@ class choice_set_generator {
     }
 
     /**
-     * Selects the best candidate set by scoring several candidate shuffles.
+     * Selects a balanced candidate set using deterministic random sampling.
+     *
+     * Candidate generation deliberately keeps the random shuffle as the tie-breaker
+     * when items have equal appearance counts. The previous implementation sorted
+     * equal-count items by id, which unintentionally collapsed different shuffles
+     * into the same candidate and prevented the pairing score from working properly.
      *
      * @param array $items Available item objects.
      * @param int $itemsperround Number of items to select.
@@ -144,60 +279,113 @@ class choice_set_generator {
      * @param int $rngstate RNG state, updated by reference.
      * @return array Selected item objects.
      */
-    private static function select_best_candidate(array $items, int $itemsperround, array $appearances, array $pairings, int &$rngstate): array {
+    private static function select_best_candidate(array $items, int $itemsperround,
+            array $appearances, array $pairings, int &$rngstate): array {
         $bestcandidate = [];
         $bestscore = null;
 
         for ($attempt = 0; $attempt < self::CANDIDATE_ATTEMPTS; $attempt++) {
             $shuffled = self::deterministic_shuffle($items, $rngstate);
+            $randomrank = [];
+            foreach ($shuffled as $rank => $item) {
+                $randomrank[$item->id] = $rank;
+            }
 
-            usort($shuffled, static function(\stdClass $a, \stdClass $b) use ($appearances): int {
+            usort($shuffled, static function(\stdClass $a, \stdClass $b) use ($appearances, $randomrank): int {
                 $appearancecompare = ($appearances[$a->id] ?? 0) <=> ($appearances[$b->id] ?? 0);
-
                 if ($appearancecompare !== 0) {
                     return $appearancecompare;
                 }
-
-                return strcmp($a->id, $b->id);
+                return ($randomrank[$a->id] ?? 0) <=> ($randomrank[$b->id] ?? 0);
             });
 
             $candidate = array_slice($shuffled, 0, $itemsperround);
             $score = self::score_candidate($candidate, $appearances, $pairings);
 
-            if ($bestscore === null || $score < $bestscore) {
+            if ($bestscore === null || self::score_is_better($score, $bestscore)) {
                 $bestscore = $score;
                 $bestcandidate = $candidate;
             }
         }
 
-        return self::deterministic_shuffle($bestcandidate, $rngstate);
+        return $bestcandidate;
     }
 
     /**
-     * Scores a candidate set. Lower is better.
+     * Scores a candidate lexicographically. Lower is better.
+     *
+     * Pair repetition is considered before appearance variance because the candidate
+     * pool has already been restricted toward low-appearance items. This encourages
+     * new pair coverage without allowing a small subset of items to dominate.
      *
      * @param array $candidate Candidate item objects.
      * @param array $appearances Current appearance counts.
      * @param array $pairings Current pair counts.
-     * @return int Candidate score.
+     * @return array<int, int> Lexicographic score tuple.
      */
-    private static function score_candidate(array $candidate, array $appearances, array $pairings): int {
-        $score = 0;
-
-        foreach ($candidate as $item) {
-            $score += ($appearances[$item->id] ?? 0) * 100;
-        }
-
+    private static function score_candidate(array $candidate, array $appearances, array $pairings): array {
+        $pairrepetition = 0;
+        $pairmaximum = 0;
         $count = count($candidate);
+
         for ($i = 0; $i < $count; $i++) {
             for ($j = $i + 1; $j < $count; $j++) {
                 $firstid = $candidate[$i]->id;
                 $secondid = $candidate[$j]->id;
-                $score += self::pair_count($firstid, $secondid, $pairings) * 10;
+                $paircount = self::pair_count($firstid, $secondid, $pairings);
+                $pairrepetition += $paircount;
+                $pairmaximum = max($pairmaximum, $paircount);
             }
         }
 
-        return $score;
+        $projected = $appearances;
+        foreach ($candidate as $item) {
+            $projected[$item->id] = ($projected[$item->id] ?? 0) + 1;
+        }
+
+        $appearancevalues = array_values($projected);
+        $appearancespread = max($appearancevalues) - min($appearancevalues);
+        $appearancesquares = 0;
+        foreach ($appearancevalues as $value) {
+            $appearancesquares += $value * $value;
+        }
+
+        return [$pairmaximum, $pairrepetition, $appearancespread, $appearancesquares];
+    }
+
+    /**
+     * Compares two lexicographic score tuples.
+     *
+     * @param array $candidate Candidate score.
+     * @param array $current Current best score.
+     * @return bool True when candidate is better.
+     */
+    private static function score_is_better(array $candidate, array $current): bool {
+        $count = min(count($candidate), count($current));
+        for ($i = 0; $i < $count; $i++) {
+            if ($candidate[$i] < $current[$i]) {
+                return true;
+            }
+            if ($candidate[$i] > $current[$i]) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Records appearances and pairings for a selected candidate.
+     *
+     * @param array $candidate Selected item objects.
+     * @param array $appearances Appearance counts, updated by reference.
+     * @param array $pairings Pair counts, updated by reference.
+     * @return void
+     */
+    private static function record_candidate(array $candidate, array &$appearances, array &$pairings): void {
+        foreach ($candidate as $item) {
+            $appearances[$item->id] = ($appearances[$item->id] ?? 0) + 1;
+        }
+        self::record_pairings($candidate, $pairings);
     }
 
     /**
@@ -218,7 +406,6 @@ class choice_set_generator {
                 if (!isset($pairings[$firstid][$secondid])) {
                     $pairings[$firstid][$secondid] = 0;
                 }
-
                 if (!isset($pairings[$secondid][$firstid])) {
                     $pairings[$secondid][$firstid] = 0;
                 }
@@ -281,11 +468,6 @@ class choice_set_generator {
      */
     private static function normalise_seed(int $seed): int {
         $seed = abs($seed);
-
-        if ($seed === 0) {
-            return 1;
-        }
-
-        return $seed;
+        return $seed === 0 ? 1 : $seed;
     }
 }

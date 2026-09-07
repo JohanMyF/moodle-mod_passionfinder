@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_passionfinder';
-$plugin->version = 2026060200;
+$plugin->version = 2026090701;
 $plugin->requires = 2024042200;
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '0.1.0';
+$plugin->release = '0.2.1';
