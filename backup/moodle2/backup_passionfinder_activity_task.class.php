@@ -24,6 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot . '/mod/passionfinder/backup/moodle2/backup_passionfinder_stepslib.php');
+
 /**
  * Defines the PassionFinder backup activity task.
  *
